@@ -61,7 +61,7 @@ export default function Home() {
     if (error) {
       console.error('Error fetching listings:', error)
     } else {
-      setListings(data || [])
+      setListings((data as Listing[]) || [])
     }
     setLoading(false)
   }
