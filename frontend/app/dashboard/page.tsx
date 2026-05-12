@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { useLang } from '@/lib/language'
+import Link from 'next/link'
 
 interface Listing {
   id: number
@@ -21,26 +23,17 @@ interface Listing {
   image_url: string
 }
 
-const scoreColor = (score: number) => {
-  if (score >= 75) return 'bg-green-100 text-green-800'
-  if (score >= 60) return 'bg-yellow-100 text-yellow-800'
-  if (score >= 40) return 'bg-orange-100 text-orange-800'
-  return 'bg-red-100 text-red-800'
-}
-
-const scoreLabel = (score: number) => {
-  if (score >= 75) return 'Great deal'
-  if (score >= 60) return 'Good deal'
-  if (score >= 40) return 'Fair price'
-  return 'Overpriced'
-}
-
-export default function Home() {
+export default function Dashboard() {
+  const { lang, setLang, t } = useLang()
   const [listings, setListings] = useState<Listing[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [minScore, setMinScore] = useState(60)
   const [sortBy, setSortBy] = useState('deal_score')
+  const [maxPrice, setMaxPrice] = useState('')
+  const [minYear, setMinYear] = useState('')
+  const [fuelType, setFuelType] = useState('')
+  const [transmission, setTransmission] = useState('')
 
   useEffect(() => {
     fetchListings()
@@ -49,14 +42,16 @@ export default function Home() {
   async function fetchListings() {
     setLoading(true)
 
-    const { data, error } = await supabase
+    let query = supabase
       .from('listings')
       .select('*')
       .not('deal_score', 'is', null)
       .gte('deal_score', minScore)
       .eq('is_active', true)
       .order(sortBy, { ascending: false })
-      .limit(100)
+      .limit(200)
+
+    const { data, error } = await query
 
     if (error) {
       console.error('Error fetching listings:', error)
@@ -66,41 +61,76 @@ export default function Home() {
     setLoading(false)
   }
 
+  const scoreColor = (score: number) => {
+    if (score >= 75) return 'bg-green-100 text-green-800'
+    if (score >= 60) return 'bg-yellow-100 text-yellow-800'
+    if (score >= 40) return 'bg-orange-100 text-orange-800'
+    return 'bg-red-100 text-red-800'
+  }
+
+  const scoreLabel = (score: number) => {
+    if (score >= 75) return t.score_great
+    if (score >= 60) return t.score_good
+    if (score >= 40) return t.score_fair
+    return t.score_over
+  }
+
   const filtered = listings.filter(l => {
-    if (!search) return true
-    const s = search.toLowerCase()
-    return (
-      l.brand?.toLowerCase().includes(s) ||
-      l.model?.toLowerCase().includes(s) ||
-      l.location?.toLowerCase().includes(s)
-    )
+    if (search) {
+      const s = search.toLowerCase()
+      if (!l.brand?.toLowerCase().includes(s) &&
+          !l.model?.toLowerCase().includes(s) &&
+          !l.location?.toLowerCase().includes(s)) return false
+    }
+    if (maxPrice && l.price_eur > Number(maxPrice)) return false
+    if (minYear && l.year < Number(minYear)) return false
+    if (fuelType && l.fuel_type !== fuelType) return false
+    if (transmission && l.transmission !== transmission) return false
+    return true
   })
 
   return (
     <main className="min-h-screen bg-gray-50">
       <div className="bg-white border-b px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold text-gray-900">Car Arbitrage</h1>
-            <p className="text-sm text-gray-500">Lithuania used car intelligence</p>
+          <div className="flex items-center gap-4">
+            <Link href="/" className="text-gray-400 hover:text-gray-600 text-sm">← DealRadar</Link>
+            <div>
+              <h1 className="text-xl font-bold text-gray-900">{t.dash_title}</h1>
+              <p className="text-sm text-gray-500">{t.dash_subtitle}</p>
+            </div>
           </div>
-          <div className="text-sm text-gray-500">
-            {filtered.length} listings shown
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-gray-500">{filtered.length} {t.dash_shown}</span>
+            <div className="flex items-center gap-1 bg-gray-100 border border-gray-200 rounded-lg p-1">
+              <button
+                onClick={() => setLang('lt')}
+                className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${lang === 'lt' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                🇱🇹 LT
+              </button>
+              <button
+                onClick={() => setLang('en')}
+                className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${lang === 'en' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                🇬🇧 EN
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
       <div className="bg-white border-b px-6 py-3">
-        <div className="max-w-7xl mx-auto flex flex-wrap gap-4 items-center">
+        <div className="max-w-7xl mx-auto flex flex-wrap gap-3 items-center">
           <input
             type="text"
-            placeholder="Search brand, model, location..."
+            placeholder={t.dash_search}
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="border rounded px-3 py-1.5 text-sm w-64 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="border rounded px-3 py-1.5 text-sm w-56 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <div className="flex items-center gap-2">
-            <label className="text-sm text-gray-600">Min score:</label>
+            <label className="text-sm text-gray-600">{t.dash_min_score}</label>
             <select
               value={minScore}
               onChange={e => setMinScore(Number(e.target.value))}
@@ -113,17 +143,51 @@ export default function Home() {
               <option value={80}>80+</option>
             </select>
           </div>
+          <input
+            type="number"
+            placeholder="Max €"
+            value={maxPrice}
+            onChange={e => setMaxPrice(e.target.value)}
+            className="border rounded px-3 py-1.5 text-sm w-24 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <input
+            type="number"
+            placeholder="Min year"
+            value={minYear}
+            onChange={e => setMinYear(e.target.value)}
+            className="border rounded px-3 py-1.5 text-sm w-24 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <select
+            value={fuelType}
+            onChange={e => setFuelType(e.target.value)}
+            className="border rounded px-2 py-1.5 text-sm focus:outline-none"
+          >
+            <option value="">All fuel</option>
+            <option value="Dyzelinas">Diesel</option>
+            <option value="Benzinas">Petrol</option>
+            <option value="Elektra">Electric</option>
+            <option value="Hibridas">Hybrid</option>
+          </select>
+          <select
+            value={transmission}
+            onChange={e => setTransmission(e.target.value)}
+            className="border rounded px-2 py-1.5 text-sm focus:outline-none"
+          >
+            <option value="">All gearbox</option>
+            <option value="Mechaninė">Manual</option>
+            <option value="Automatinė">Automatic</option>
+          </select>
           <div className="flex items-center gap-2">
-            <label className="text-sm text-gray-600">Sort by:</label>
+            <label className="text-sm text-gray-600">{t.dash_sort}</label>
             <select
               value={sortBy}
               onChange={e => setSortBy(e.target.value)}
               className="border rounded px-2 py-1.5 text-sm focus:outline-none"
             >
-              <option value="deal_score">Deal score</option>
-              <option value="price_eur">Price</option>
-              <option value="year">Year</option>
-              <option value="mileage_km">Mileage</option>
+              <option value="deal_score">{t.dash_sort_score}</option>
+              <option value="price_eur">{t.dash_sort_price}</option>
+              <option value="year">{t.dash_sort_year}</option>
+              <option value="mileage_km">{t.dash_sort_mileage}</option>
             </select>
           </div>
         </div>
@@ -131,20 +195,20 @@ export default function Home() {
 
       <div className="max-w-7xl mx-auto px-6 py-6">
         {loading ? (
-          <div className="text-center py-20 text-gray-400">Loading listings...</div>
+          <div className="text-center py-20 text-gray-400">{t.dash_loading}</div>
         ) : (
           <div className="bg-white rounded-lg border overflow-hidden">
             <table className="w-full text-sm">
               <thead className="bg-gray-50 border-b">
                 <tr>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Car</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Year</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Mileage</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Price</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Est. value</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">vs Market</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Score</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Location</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-600">{t.dash_col_car}</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-600">{t.dash_col_year}</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-600">{t.dash_col_mileage}</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-600">{t.dash_col_price}</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-600">{t.dash_col_est}</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-600">{t.dash_col_market}</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-600">{t.dash_col_score}</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-600">{t.dash_col_location}</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-600"></th>
                 </tr>
               </thead>
@@ -179,16 +243,14 @@ export default function Home() {
                     </td>
                     <td className="px-4 py-3 text-gray-500 text-xs">{listing.location || '—'}</td>
                     <td className="px-4 py-3">
-                      <a href={listing.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-xs">View</a>
+                      <a href={listing.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-xs">{t.dash_view}</a>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
             {filtered.length === 0 && (
-              <div className="text-center py-12 text-gray-400">
-                No listings match your filters.
-              </div>
+              <div className="text-center py-12 text-gray-400">{t.dash_no_results}</div>
             )}
           </div>
         )}

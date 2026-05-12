@@ -1,37 +1,56 @@
-import Link from 'next/link'
+'use client'
 
-export default function LandingPage() {
+import Link from 'next/link'
+import { useLang, LanguageProvider } from '@/lib/language'
+
+function LandingContent() {
+  const { lang, setLang, t } = useLang()
+
   return (
     <main className="min-h-screen bg-gray-950 text-white">
-
       <nav className="flex items-center justify-between px-8 py-5 border-b border-gray-800">
         <div className="flex items-center gap-2">
           <span className="text-2xl">📡</span>
           <span className="font-bold text-xl tracking-tight">DealRadar</span>
         </div>
-        <Link href="/dashboard" className="bg-white text-gray-950 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors">
-          Open Dashboard
-        </Link>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-1 bg-gray-900 border border-gray-700 rounded-lg p-1">
+            <button
+              onClick={() => setLang('lt')}
+              className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${lang === 'lt' ? 'bg-gray-700 text-white' : 'text-gray-400 hover:text-white'}`}
+            >
+              🇱🇹 LT
+            </button>
+            <button
+              onClick={() => setLang('en')}
+              className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${lang === 'en' ? 'bg-gray-700 text-white' : 'text-gray-400 hover:text-white'}`}
+            >
+              🇬🇧 EN
+            </button>
+          </div>
+          <Link href="/dashboard" className="bg-white text-gray-950 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors">
+            {t.nav_dashboard}
+          </Link>
+        </div>
       </nav>
 
       <section className="max-w-4xl mx-auto px-8 py-24 text-center">
         <div className="inline-block bg-green-500/10 text-green-400 text-sm font-medium px-3 py-1 rounded-full mb-6 border border-green-500/20">
-          🇱🇹 Lithuania • Live market data
+          {t.hero_badge}
         </div>
         <h1 className="text-5xl font-bold tracking-tight mb-6 leading-tight">
-          Find undervalued cars<br />
-          <span className="text-green-400">before anyone else does</span>
+          {t.hero_title}<br />
+          <span className="text-green-400">{t.hero_title_highlight}</span>
         </h1>
         <p className="text-xl text-gray-400 mb-10 max-w-2xl mx-auto leading-relaxed">
-          DealRadar scans autoplius.lt and scores every listing against real market data.
-          Get instant alerts when a great deal appears — before dealers snap it up.
+          {t.hero_desc}
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link href="/dashboard" className="bg-green-500 hover:bg-green-400 text-gray-950 font-semibold px-8 py-4 rounded-xl text-lg transition-colors">
-            View live deals
+            {t.hero_btn_dashboard}
           </Link>
           <a href="https://t.me/your_bot_username" className="border border-gray-700 hover:border-gray-500 text-white font-semibold px-8 py-4 rounded-xl text-lg transition-colors">
-            Get Telegram alerts
+            {t.hero_btn_telegram}
           </a>
         </div>
       </section>
@@ -40,49 +59,43 @@ export default function LandingPage() {
         <div className="max-w-4xl mx-auto px-8 grid grid-cols-3 gap-8 text-center">
           <div>
             <div className="text-4xl font-bold text-green-400">4,000+</div>
-            <div className="text-gray-400 mt-1">Listings tracked</div>
+            <div className="text-gray-400 mt-1">{t.stats_listings}</div>
           </div>
           <div>
             <div className="text-4xl font-bold text-green-400">Live</div>
-            <div className="text-gray-400 mt-1">Market scoring</div>
+            <div className="text-gray-400 mt-1">{t.stats_scoring}</div>
           </div>
           <div>
             <div className="text-4xl font-bold text-green-400">Free</div>
-            <div className="text-gray-400 mt-1">During beta</div>
+            <div className="text-gray-400 mt-1">{t.stats_free}</div>
           </div>
         </div>
       </section>
 
       <section className="max-w-4xl mx-auto px-8 py-24">
-        <h2 className="text-3xl font-bold text-center mb-16">How it works</h2>
+        <h2 className="text-3xl font-bold text-center mb-16">{t.how_title}</h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
           <div className="bg-gray-900 rounded-2xl p-6 border border-gray-800">
             <div className="text-3xl mb-4">🔍</div>
-            <h3 className="font-semibold text-lg mb-2">We scan the market</h3>
-            <p className="text-gray-400 text-sm leading-relaxed">
-              DealRadar automatically scrapes autoplius.lt and collects every used car listing in Lithuania.
-            </p>
+            <h3 className="font-semibold text-lg mb-2">{t.how_1_title}</h3>
+            <p className="text-gray-400 text-sm leading-relaxed">{t.how_1_desc}</p>
           </div>
           <div className="bg-gray-900 rounded-2xl p-6 border border-gray-800">
             <div className="text-3xl mb-4">📊</div>
-            <h3 className="font-semibold text-lg mb-2">We score every car</h3>
-            <p className="text-gray-400 text-sm leading-relaxed">
-              Each listing is compared against similar cars — same model, year, mileage, fuel type — and scored 0-100.
-            </p>
+            <h3 className="font-semibold text-lg mb-2">{t.how_2_title}</h3>
+            <p className="text-gray-400 text-sm leading-relaxed">{t.how_2_desc}</p>
           </div>
           <div className="bg-gray-900 rounded-2xl p-6 border border-gray-800">
             <div className="text-3xl mb-4">🔔</div>
-            <h3 className="font-semibold text-lg mb-2">You get alerted</h3>
-            <p className="text-gray-400 text-sm leading-relaxed">
-              When a great deal appears that matches your criteria, you get a Telegram notification instantly.
-            </p>
+            <h3 className="font-semibold text-lg mb-2">{t.how_3_title}</h3>
+            <p className="text-gray-400 text-sm leading-relaxed">{t.how_3_desc}</p>
           </div>
         </div>
       </section>
 
       <section className="max-w-4xl mx-auto px-8 pb-24">
-        <h2 className="text-3xl font-bold text-center mb-4">What an alert looks like</h2>
-        <p className="text-gray-400 text-center mb-12">Real deals sent directly to your Telegram</p>
+        <h2 className="text-3xl font-bold text-center mb-4">{t.alert_title}</h2>
+        <p className="text-gray-400 text-center mb-12">{t.alert_desc}</p>
         <div className="max-w-sm mx-auto bg-gray-900 rounded-2xl p-6 border border-gray-800">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 bg-green-500/20 rounded-full flex items-center justify-center text-xl">📡</div>
@@ -98,23 +111,25 @@ export default function LandingPage() {
             <div>⭐ Deal score: <span className="font-semibold">89/100</span></div>
             <div>📍 Vilnius</div>
             <div>🛣 145,000 km · Diesel · Auto</div>
-            <div className="pt-2 text-blue-400 underline cursor-pointer">View listing</div>
           </div>
         </div>
       </section>
 
       <section className="border-t border-gray-800 py-24 text-center">
-        <h2 className="text-3xl font-bold mb-4">Ready to find your next deal?</h2>
-        <p className="text-gray-400 mb-8">Free during beta. No credit card required.</p>
+        <h2 className="text-3xl font-bold mb-4">{t.cta_title}</h2>
+        <p className="text-gray-400 mb-8">{t.cta_desc}</p>
         <Link href="/dashboard" className="bg-green-500 hover:bg-green-400 text-gray-950 font-semibold px-8 py-4 rounded-xl text-lg transition-colors inline-block">
-          View live deals
+          {t.cta_btn}
         </Link>
       </section>
 
       <footer className="border-t border-gray-800 py-8 text-center text-gray-500 text-sm">
-        DealRadar · Lithuania · {new Date().getFullYear()}
+        {t.footer} · {new Date().getFullYear()}
       </footer>
-
     </main>
   )
+}
+
+export default function LandingPage() {
+  return <LandingContent />
 }
