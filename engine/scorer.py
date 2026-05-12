@@ -1,8 +1,8 @@
 import os
 import psycopg2
-import numpy as np
-from dotenv import load_dotenv
 import psycopg2.extras
+from collections import defaultdict
+from dotenv import load_dotenv
 
 load_dotenv()
 
@@ -29,6 +29,15 @@ def get_mileage_bucket(mileage_km):
         return (350000, 999999)
 
 
+def median(values):
+    sorted_vals = sorted(values)
+    n = len(sorted_vals)
+    mid = n // 2
+    if n % 2 == 0:
+        return (sorted_vals[mid - 1] + sorted_vals[mid]) / 2
+    return float(sorted_vals[mid])
+
+
 def calculate_deal_score(price: float, estimated_price: float) -> float:
     if not price or not estimated_price or estimated_price == 0:
         return None
@@ -40,14 +49,11 @@ def calculate_deal_score(price: float, estimated_price: float) -> float:
 def run_scoring():
     """
     Score all listings using a single connection and in-memory comparables.
-    Much faster than making individual DB calls per listing.
     """
     conn = get_connection()
 
     try:
         with conn.cursor() as cur:
-
-            # Load ALL scoreable listings into memory at once
             print("Loading all listings into memory...")
             cur.execute("""
                 SELECT id, brand, model, year, mileage_km,
@@ -73,9 +79,6 @@ def run_scoring():
             ]
             print(f"Loaded {len(all_listings)} listings. Scoring...")
 
-            # Group listings by brand+model for fast lookup
-            # Instead of querying DB per listing, we filter in memory
-            from collections import defaultdict
             by_brand_model = defaultdict(list)
             for l in all_listings:
                 if l["brand"] and l["model"]:
@@ -84,7 +87,7 @@ def run_scoring():
 
             scored = 0
             skipped = 0
-            updates = []  # Batch all updates
+            updates = []
 
             for i, listing in enumerate(all_listings):
                 brand = listing.get("brand")
@@ -100,10 +103,8 @@ def run_scoring():
                 key = (brand.lower(), model.lower())
                 candidates = by_brand_model[key]
 
-                # Get mileage bucket
                 mileage_min, mileage_max = get_mileage_bucket(mileage)
 
-                # Filter comparables in memory
                 comparables = [
                     c for c in candidates
                     if c["id"] != listing["id"]
@@ -118,9 +119,8 @@ def run_scoring():
                     continue
 
                 prices = [c["price_eur"] for c in comparables]
-                estimated_price = float(np.median(prices))
+                estimated_price = median(prices)
 
-                # Sanity check
                 if estimated_price > price * 3:
                     skipped += 1
                     continue
@@ -140,12 +140,9 @@ def run_scoring():
                 if (i + 1) % 500 == 0:
                     print(f"  Progress: {i+1}/{len(all_listings)}...")
 
-            # Apply all updates in one batch
             print(f"Saving {len(updates)} scores to database...")
             with conn.cursor() as cur:
-                # Clear old scores first
                 cur.execute("UPDATE listings SET deal_score = NULL, estimated_price = NULL, price_vs_median = NULL, comparable_count = NULL")
-
                 psycopg2.extras.execute_batch(cur, """
                     UPDATE listings
                     SET deal_score = %s,
