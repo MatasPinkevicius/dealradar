@@ -1,0 +1,21 @@
+# Secrets
+.env
+frontend/.env.local
+
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# Node
+frontend/node_modules/
+frontend/.next/
+
+# Playwright
+playwright-browsers/
+
+# Debug files
+debug_page.html
+debug_page2.html
