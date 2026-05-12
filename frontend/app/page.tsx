@@ -1,198 +1,120 @@
-'use client'
+import Link from 'next/link'
 
-import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase'
-
-interface Listing {
-  id: number
-  brand: string
-  model: string
-  year: number
-  mileage_km: number
-  price_eur: number
-  estimated_price: number
-  price_vs_median: number
-  deal_score: number
-  comparable_count: number
-  fuel_type: string
-  transmission: string
-  location: string
-  url: string
-  image_url: string
-}
-
-const scoreColor = (score: number) => {
-  if (score >= 75) return 'bg-green-100 text-green-800'
-  if (score >= 60) return 'bg-yellow-100 text-yellow-800'
-  if (score >= 40) return 'bg-orange-100 text-orange-800'
-  return 'bg-red-100 text-red-800'
-}
-
-const scoreLabel = (score: number) => {
-  if (score >= 75) return 'Great deal'
-  if (score >= 60) return 'Good deal'
-  if (score >= 40) return 'Fair price'
-  return 'Overpriced'
-}
-
-export default function Home() {
-  const [listings, setListings] = useState<Listing[]>([])
-  const [loading, setLoading] = useState(true)
-  const [search, setSearch] = useState('')
-  const [minScore, setMinScore] = useState(60)
-  const [sortBy, setSortBy] = useState('deal_score')
-
-  useEffect(() => {
-    fetchListings()
-  }, [minScore, sortBy])
-
-  async function fetchListings() {
-    setLoading(true)
-
-    const { data, error } = await supabase
-      .from('listings')
-      .select('*')
-      .not('deal_score', 'is', null)
-      .gte('deal_score', minScore)
-      .eq('is_active', true)
-      .order(sortBy, { ascending: false })
-      .limit(100)
-
-    if (error) {
-      console.error('Error fetching listings:', error)
-    } else {
-      setListings((data as Listing[]) || [])
-    }
-    setLoading(false)
-  }
-
-  const filtered = listings.filter(l => {
-    if (!search) return true
-    const s = search.toLowerCase()
-    return (
-      l.brand?.toLowerCase().includes(s) ||
-      l.model?.toLowerCase().includes(s) ||
-      l.location?.toLowerCase().includes(s)
-    )
-  })
-
+export default function LandingPage() {
   return (
-    <main className="min-h-screen bg-gray-50">
-      <div className="bg-white border-b px-6 py-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
+    <main className="min-h-screen bg-gray-950 text-white">
+
+      <nav className="flex items-center justify-between px-8 py-5 border-b border-gray-800">
+        <div className="flex items-center gap-2">
+          <span className="text-2xl">📡</span>
+          <span className="font-bold text-xl tracking-tight">DealRadar</span>
+        </div>
+        <Link href="/dashboard" className="bg-white text-gray-950 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors">
+          Open Dashboard
+        </Link>
+      </nav>
+
+      <section className="max-w-4xl mx-auto px-8 py-24 text-center">
+        <div className="inline-block bg-green-500/10 text-green-400 text-sm font-medium px-3 py-1 rounded-full mb-6 border border-green-500/20">
+          🇱🇹 Lithuania • Live market data
+        </div>
+        <h1 className="text-5xl font-bold tracking-tight mb-6 leading-tight">
+          Find undervalued cars<br />
+          <span className="text-green-400">before anyone else does</span>
+        </h1>
+        <p className="text-xl text-gray-400 mb-10 max-w-2xl mx-auto leading-relaxed">
+          DealRadar scans autoplius.lt and scores every listing against real market data.
+          Get instant alerts when a great deal appears — before dealers snap it up.
+        </p>
+        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <Link href="/dashboard" className="bg-green-500 hover:bg-green-400 text-gray-950 font-semibold px-8 py-4 rounded-xl text-lg transition-colors">
+            View live deals
+          </Link>
+          <a href="https://t.me/your_bot_username" className="border border-gray-700 hover:border-gray-500 text-white font-semibold px-8 py-4 rounded-xl text-lg transition-colors">
+            Get Telegram alerts
+          </a>
+        </div>
+      </section>
+
+      <section className="border-y border-gray-800 py-12">
+        <div className="max-w-4xl mx-auto px-8 grid grid-cols-3 gap-8 text-center">
           <div>
-            <h1 className="text-xl font-bold text-gray-900">Car Arbitrage</h1>
-            <p className="text-sm text-gray-500">Lithuania used car intelligence</p>
+            <div className="text-4xl font-bold text-green-400">4,000+</div>
+            <div className="text-gray-400 mt-1">Listings tracked</div>
           </div>
-          <div className="text-sm text-gray-500">
-            {filtered.length} listings shown
+          <div>
+            <div className="text-4xl font-bold text-green-400">Live</div>
+            <div className="text-gray-400 mt-1">Market scoring</div>
           </div>
-        </div>
-      </div>
-
-      <div className="bg-white border-b px-6 py-3">
-        <div className="max-w-7xl mx-auto flex flex-wrap gap-4 items-center">
-          <input
-            type="text"
-            placeholder="Search brand, model, location..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="border rounded px-3 py-1.5 text-sm w-64 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          <div className="flex items-center gap-2">
-            <label className="text-sm text-gray-600">Min score:</label>
-            <select
-              value={minScore}
-              onChange={e => setMinScore(Number(e.target.value))}
-              className="border rounded px-2 py-1.5 text-sm focus:outline-none"
-            >
-              <option value={0}>All</option>
-              <option value={50}>50+</option>
-              <option value={60}>60+</option>
-              <option value={70}>70+</option>
-              <option value={80}>80+</option>
-            </select>
-          </div>
-          <div className="flex items-center gap-2">
-            <label className="text-sm text-gray-600">Sort by:</label>
-            <select
-              value={sortBy}
-              onChange={e => setSortBy(e.target.value)}
-              className="border rounded px-2 py-1.5 text-sm focus:outline-none"
-            >
-              <option value="deal_score">Deal score</option>
-              <option value="price_eur">Price</option>
-              <option value="year">Year</option>
-              <option value="mileage_km">Mileage</option>
-            </select>
+          <div>
+            <div className="text-4xl font-bold text-green-400">Free</div>
+            <div className="text-gray-400 mt-1">During beta</div>
           </div>
         </div>
-      </div>
+      </section>
 
-      <div className="max-w-7xl mx-auto px-6 py-6">
-        {loading ? (
-          <div className="text-center py-20 text-gray-400">Loading listings...</div>
-        ) : (
-          <div className="bg-white rounded-lg border overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b">
-                <tr>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Car</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Year</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Mileage</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Price</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Est. value</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">vs Market</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Score</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Location</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {filtered.map(listing => (
-                  <tr key={listing.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-4 py-3 font-medium text-gray-900">
-                      {listing.brand} {listing.model}
-                      <div className="text-xs text-gray-400 font-normal">
-                        {listing.fuel_type} · {listing.transmission}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-gray-700">{listing.year}</td>
-                    <td className="px-4 py-3 text-gray-700">
-                      {listing.mileage_km ? `${listing.mileage_km.toLocaleString()} km` : '—'}
-                    </td>
-                    <td className="px-4 py-3 font-semibold text-gray-900">
-                      {listing.price_eur ? `€${listing.price_eur.toLocaleString()}` : '—'}
-                    </td>
-                    <td className="px-4 py-3 text-gray-500">
-                      {listing.estimated_price ? `€${listing.estimated_price.toLocaleString()}` : '—'}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`font-medium ${listing.price_vs_median < 0 ? 'text-green-600' : 'text-red-500'}`}>
-                        {listing.price_vs_median > 0 ? '+' : ''}{listing.price_vs_median?.toFixed(1)}%
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${scoreColor(listing.deal_score)}`}>
-                        {listing.deal_score?.toFixed(0)} · {scoreLabel(listing.deal_score)}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-gray-500 text-xs">{listing.location || '—'}</td>
-                    <td className="px-4 py-3">
-                      <a href={listing.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-xs">View</a>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {filtered.length === 0 && (
-              <div className="text-center py-12 text-gray-400">
-                No listings match your filters.
-              </div>
-            )}
+      <section className="max-w-4xl mx-auto px-8 py-24">
+        <h2 className="text-3xl font-bold text-center mb-16">How it works</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
+          <div className="bg-gray-900 rounded-2xl p-6 border border-gray-800">
+            <div className="text-3xl mb-4">🔍</div>
+            <h3 className="font-semibold text-lg mb-2">We scan the market</h3>
+            <p className="text-gray-400 text-sm leading-relaxed">
+              DealRadar automatically scrapes autoplius.lt and collects every used car listing in Lithuania.
+            </p>
           </div>
-        )}
-      </div>
+          <div className="bg-gray-900 rounded-2xl p-6 border border-gray-800">
+            <div className="text-3xl mb-4">📊</div>
+            <h3 className="font-semibold text-lg mb-2">We score every car</h3>
+            <p className="text-gray-400 text-sm leading-relaxed">
+              Each listing is compared against similar cars — same model, year, mileage, fuel type — and scored 0-100.
+            </p>
+          </div>
+          <div className="bg-gray-900 rounded-2xl p-6 border border-gray-800">
+            <div className="text-3xl mb-4">🔔</div>
+            <h3 className="font-semibold text-lg mb-2">You get alerted</h3>
+            <p className="text-gray-400 text-sm leading-relaxed">
+              When a great deal appears that matches your criteria, you get a Telegram notification instantly.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section className="max-w-4xl mx-auto px-8 pb-24">
+        <h2 className="text-3xl font-bold text-center mb-4">What an alert looks like</h2>
+        <p className="text-gray-400 text-center mb-12">Real deals sent directly to your Telegram</p>
+        <div className="max-w-sm mx-auto bg-gray-900 rounded-2xl p-6 border border-gray-800">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 bg-green-500/20 rounded-full flex items-center justify-center text-xl">📡</div>
+            <div>
+              <div className="font-semibold">DealRadar</div>
+              <div className="text-xs text-gray-500">just now</div>
+            </div>
+          </div>
+          <div className="text-sm leading-relaxed space-y-1">
+            <div>🚗 <span className="font-semibold">BMW 320d 2017</span></div>
+            <div>💰 <span className="font-semibold text-green-400">€8,500</span> (est. market: €11,200)</div>
+            <div>📉 <span className="font-semibold text-green-400">24% below market</span></div>
+            <div>⭐ Deal score: <span className="font-semibold">89/100</span></div>
+            <div>📍 Vilnius</div>
+            <div>🛣 145,000 km · Diesel · Auto</div>
+            <div className="pt-2 text-blue-400 underline cursor-pointer">View listing</div>
+          </div>
+        </div>
+      </section>
+
+      <section className="border-t border-gray-800 py-24 text-center">
+        <h2 className="text-3xl font-bold mb-4">Ready to find your next deal?</h2>
+        <p className="text-gray-400 mb-8">Free during beta. No credit card required.</p>
+        <Link href="/dashboard" className="bg-green-500 hover:bg-green-400 text-gray-950 font-semibold px-8 py-4 rounded-xl text-lg transition-colors inline-block">
+          View live deals
+        </Link>
+      </section>
+
+      <footer className="border-t border-gray-800 py-8 text-center text-gray-500 text-sm">
+        DealRadar · Lithuania · {new Date().getFullYear()}
+      </footer>
+
     </main>
   )
 }
