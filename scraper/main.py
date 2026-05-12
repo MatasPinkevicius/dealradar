@@ -51,7 +51,7 @@ def run_scrape(max_pages: int = 100):
 
 
 if __name__ == "__main__":
-    run_scrape(max_pages=100)
+    run_scrape(max_pages=350)
     logger.info("Running scoring engine...")
     run_scoring()
     logger.info("Sending alerts...")

@@ -22,6 +22,8 @@ interface Listing {
   location: string
   url: string
   image_url: string
+  first_seen_at: string
+  last_seen_at: string
 }
 
 const PAGE_SIZE = 100
@@ -41,6 +43,11 @@ export default function Dashboard() {
   const [bodyType, setBodyType] = useState('')
   const [page, setPage] = useState(0)
   const [totalCount, setTotalCount] = useState(0)
+
+  useEffect(() => {
+    fetchListings(0)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- remount/back navigation: refetch first page
+  }, [])
 
   useEffect(() => {
     setPage(0)
@@ -125,6 +132,20 @@ export default function Dashboard() {
       return map[val] || val
     }
     return val
+  }
+
+  const formatDate = (dateStr: string) => {
+    if (!dateStr) return '—'
+    const date = new Date(dateStr)
+    const now = new Date()
+    const diffMs = now.getTime() - date.getTime()
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
+    const diffDays = Math.floor(diffHours / 24)
+
+    if (diffHours < 1) return lang === 'lt' ? 'Ką tik' : 'Just now'
+    if (diffHours < 24) return lang === 'lt' ? `Prieš ${diffHours}h` : `${diffHours}h ago`
+    if (diffDays < 7) return lang === 'lt' ? `Prieš ${diffDays}d` : `${diffDays}d ago`
+    return date.toLocaleDateString(lang === 'lt' ? 'lt-LT' : 'en-GB')
   }
 
   const totalPages = Math.ceil(totalCount / PAGE_SIZE)
@@ -242,6 +263,7 @@ export default function Dashboard() {
               onChange={e => setSortBy(e.target.value)}
               className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 text-white"
             >
+              <option value="first_seen_at">{lang === 'lt' ? 'Naujausi' : 'Newest'}</option>
               <option value="deal_score">{lang === 'lt' ? 'Balas' : 'Score'}</option>
               <option value="price_eur">{t.dash_sort_price}</option>
               <option value="year">{t.dash_sort_year}</option>
@@ -276,13 +298,26 @@ export default function Dashboard() {
                     <th className="text-left px-4 py-3 font-medium text-gray-400">{t.dash_col_market}</th>
                     <th className="text-left px-4 py-3 font-medium text-gray-400">{lang === 'lt' ? 'Balas' : 'Score'}</th>
                     <th className="text-left px-4 py-3 font-medium text-gray-400">{t.dash_col_location}</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-400">{lang === 'lt' ? 'Matyta' : 'Seen'}</th>
                     <th className="text-left px-4 py-3 font-medium text-gray-400"></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-800">
                   {filtered.map(listing => (
-                    <tr key={listing.id} className="hover:bg-gray-800/50 transition-colors">
-                      <td className="px-4 py-3 font-medium text-white">
+                    <tr
+                      key={listing.id}
+                      role="button"
+                      tabIndex={0}
+                      className="hover:bg-gray-800/50 transition-colors cursor-pointer group"
+                      onClick={() => window.open(`/listing/${listing.id}`, '_blank', 'noopener,noreferrer')}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          window.open(`/listing/${listing.id}`, '_blank', 'noopener,noreferrer')
+                        }
+                      }}
+                    >
+                      <td className="px-4 py-3 font-medium text-white group-hover:text-green-400 transition-colors">
                         {listing.brand} {listing.model}
                         <div className="text-xs text-gray-500 font-normal mt-0.5">
                           {listing.fuel_type} · {listing.transmission}
@@ -313,8 +348,17 @@ export default function Dashboard() {
                         </div>
                       </td>
                       <td className="px-4 py-3 text-gray-500 text-xs">{listing.location || '—'}</td>
+                      <td className="px-4 py-3 text-gray-500 text-xs">
+                        {formatDate(listing.first_seen_at)}
+                      </td>
                       <td className="px-4 py-3">
-                        <a href={listing.url} target="_blank" rel="noopener noreferrer" className="text-green-400 hover:text-green-300 text-xs font-medium transition-colors">
+                        <a
+                          href={listing.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={e => e.stopPropagation()}
+                          className="text-green-400 hover:text-green-300 text-xs font-medium transition-colors"
+                        >
                           {t.dash_view} →
                         </a>
                       </td>
