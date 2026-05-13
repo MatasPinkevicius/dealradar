@@ -269,7 +269,7 @@ export default function Dashboard() {
                           {listing.price_vs_median > 0 ? '+' : ''}{listing.price_vs_median?.toFixed(1)}%
                         </span>
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3 w-36">
                         <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${scoreColor(listing.deal_score)}`}>
                           <span className="font-bold">{listing.deal_score?.toFixed(0)}</span>
                           <span className="opacity-75">· {scoreLabel(listing.deal_score)}</span>
