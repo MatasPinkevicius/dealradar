@@ -19,13 +19,13 @@ function LandingContent() {
               onClick={() => setLang('lt')}
               className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${lang === 'lt' ? 'bg-gray-700 text-white' : 'text-gray-400 hover:text-white'}`}
             >
-              🇱🇹 LT
+              LT
             </button>
             <button
               onClick={() => setLang('en')}
               className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${lang === 'en' ? 'bg-gray-700 text-white' : 'text-gray-400 hover:text-white'}`}
             >
-              🇬🇧 EN
+              EN
             </button>
           </div>
           <Link href="/dashboard" className="bg-white text-gray-950 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors">

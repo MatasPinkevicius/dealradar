@@ -169,10 +169,10 @@ export default function Dashboard() {
             </span>
             <div className="flex items-center gap-1 bg-gray-800 border border-gray-700 rounded-lg p-1">
               <button onClick={() => setLang('lt')} className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${lang === 'lt' ? 'bg-gray-700 text-white' : 'text-gray-400 hover:text-white'}`}>
-                🇱🇹 LT
+                LT
               </button>
               <button onClick={() => setLang('en')} className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${lang === 'en' ? 'bg-gray-700 text-white' : 'text-gray-400 hover:text-white'}`}>
-                🇬🇧 EN
+                EN
               </button>
             </div>
           </div>
