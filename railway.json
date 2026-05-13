@@ -1,12 +1,13 @@
 {
-    "$schema": "https://railway.com/railway.schema.json",
-    "build": {
-      "builder": "RAILPACK",
-      "buildEnvironment": "V3"
-    },
-    "deploy": {
-      "startCommand": "python -m scraper.main",
-      "restartPolicyType": "ON_FAILURE",
-      "restartPolicyMaxRetries": 3
-    }
+  "$schema": "https://railway.com/railway.schema.json",
+  "build": {
+    "builder": "RAILPACK",
+    "buildEnvironment": "V3",
+    "buildCommand": "pip install -r requirements.txt && playwright install chromium && playwright install-deps chromium"
+  },
+  "deploy": {
+    "startCommand": "python -m scraper.main",
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 3
   }
+}
