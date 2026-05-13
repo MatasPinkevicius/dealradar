@@ -1,76 +1,68 @@
 import os
-import psycopg2
+import httpx
 from dotenv import load_dotenv
-from alerts.telegram import send_message, format_deal_alert
-import time
 
 load_dotenv()
 
-
-def get_connection():
-    url = os.getenv("DATABASE_URL")
-    return psycopg2.connect(url)
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 
 
-def send_top_deals(min_score: float = 75, limit: int = 5):
-    """
-    Find the best NEW deals and send them via Telegram.
-    Only sends listings:
-    - Not alerted before
-    - Seen within the last 24 hours (recently scraped)
-    - Above min_score threshold
-    """
-    conn = get_connection()
+def send_message(text: str) -> bool:
+    if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
+        print("Telegram credentials not set in .env")
+        return False
+
+    url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
+
     try:
-        with conn.cursor() as cur:
-            cur.execute("""
-                SELECT id, brand, model, year, mileage_km, price_eur,
-                       estimated_price, price_vs_median, deal_score,
-                       location, url, fuel_type, transmission
-                FROM listings
-                WHERE deal_score >= %s
-                  AND is_active = TRUE
-                  AND alerted = FALSE
-                  AND first_seen_at >= NOW() - INTERVAL '24 hours'
-                ORDER BY deal_score DESC
-                LIMIT %s
-            """, (min_score, limit))
+        response = httpx.post(url, json={
+            "chat_id": TELEGRAM_CHAT_ID,
+            "text": text,
+            "parse_mode": "HTML",
+            "disable_web_page_preview": False,
+        }, timeout=10)
 
-            rows = cur.fetchall()
-            listings = [
-                {
-                    "id": r[0], "brand": r[1], "model": r[2],
-                    "year": r[3], "mileage_km": r[4], "price_eur": r[5],
-                    "estimated_price": r[6], "price_vs_median": r[7],
-                    "deal_score": r[8], "location": r[9], "url": r[10],
-                    "fuel_type": r[11], "transmission": r[12],
-                }
-                for r in rows
-            ]
+        if response.status_code == 200:
+            return True
+        else:
+            print(f"Telegram error: {response.text}")
+            return False
 
-        if not listings:
-            print("No new deals to alert.")
-            return
+    except Exception as e:
+        print(f"Failed to send Telegram message: {e}")
+        return False
 
-        print(f"Sending {len(listings)} deal alerts...")
 
-        alerted_ids = []
-        for listing in listings:
-            message = format_deal_alert(listing)
-            success = send_message(message)
-            if success:
-                alerted_ids.append(listing["id"])
-                print(f"Sent alert for {listing['brand']} {listing['model']} (score: {listing['deal_score']})")
-                time.sleep(1)
+def format_deal_alert(listing: dict) -> str:
+    brand = listing.get('brand', '')
+    model = listing.get('model', '')
+    year = listing.get('year', '')
+    mileage = listing.get('mileage_km')
+    price = listing.get('price_eur')
+    estimated = listing.get('estimated_price')
+    pct = listing.get('price_vs_median')
+    score = listing.get('deal_score')
+    location = listing.get('location', 'N/A')
+    url = listing.get('url', '')
+    fuel = listing.get('fuel_type', '')
+    transmission = listing.get('transmission', '')
 
-        if alerted_ids:
-            with conn:
-                with conn.cursor() as cur:
-                    cur.execute(
-                        "UPDATE listings SET alerted = TRUE WHERE id = ANY(%s)",
-                        (alerted_ids,)
-                    )
-            print(f"Marked {len(alerted_ids)} listings as alerted.")
+    mileage_str = f"{mileage:,} km" if mileage else "N/A"
+    pct_str = f"{pct:.1f}%" if pct else "N/A"
 
-    finally:
-        conn.close()
+    message = (
+        f"🚗 <b>{brand} {model} {year}</b>\n"
+        f"💰 <b>€{price:,.0f}</b> (est. market: €{estimated:,.0f})\n"
+        f"📉 <b>{pct_str} below market</b>\n"
+        f"⭐ Deal score: <b>{score:.0f}/100</b>\n"
+        f"📍 {location}\n"
+        f"🛣 {mileage_str} · {fuel} · {transmission}\n"
+        f"🔗 <a href='{url}'>View listing</a>"
+    )
+
+    return message
+
+
+def test_connection():
+    return send_message("✅ DealRadar bot is connected and working!")
