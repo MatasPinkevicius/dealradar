@@ -12,8 +12,8 @@ def get_page_html(page, url: str) -> str | None:
     """
     try:
         logger.info(f"Loading: {url}")
-        page.goto(url, timeout=30000, wait_until="domcontentloaded")
-        page.wait_for_selector(".announcement-item", timeout=15000)
+        page.goto(url, timeout=60000, wait_until="domcontentloaded")
+        page.wait_for_selector(".announcement-item", timeout=30000)
         return page.content()
 
     except PlaywrightTimeout:

@@ -13,13 +13,6 @@ BATCH_SIZE = 50
 
 
 def run_scrape(max_pages: int = 100):
-    """
-    Full scrape cycle:
-    1. Start a scrape run record
-    2. Scrape listings from autoplius.lt
-    3. Save in batches of 50 to the database
-    4. Mark the run as finished
-    """
     logger.info("=== Starting scrape run ===")
     run_id = start_scrape_run()
 
@@ -44,6 +37,15 @@ def run_scrape(max_pages: int = 100):
         finish_scrape_run(run_id, total_saved, total_new)
         logger.info(f"=== Scrape complete: {total_saved} found, {total_new} new ===")
 
+        # Only score and alert if we actually got new listings
+        if total_new > 0:
+            logger.info("Running scoring engine...")
+            run_scoring()
+            logger.info(f"Sending alerts for {total_new} new listings...")
+            send_top_deals(min_score=75, limit=10)
+        else:
+            logger.info("No new listings found — skipping scoring and alerts")
+
     except Exception as e:
         logger.error(f"Scrape run failed: {e}")
         finish_scrape_run(run_id, 0, 0, status="failed")
@@ -52,7 +54,3 @@ def run_scrape(max_pages: int = 100):
 
 if __name__ == "__main__":
     run_scrape(max_pages=100)
-    logger.info("Running scoring engine...")
-    run_scoring()
-    logger.info("Sending alerts...")
-    send_top_deals(min_score=75, limit=10)
