@@ -1,9 +1,7 @@
 {
   "$schema": "https://railway.com/railway.schema.json",
   "build": {
-    "builder": "RAILPACK",
-    "buildEnvironment": "V3",
-    "buildCommand": "pip install -r requirements.txt && playwright install chromium && playwright install-deps chromium"
+    "builder": "DOCKERFILE"
   },
   "deploy": {
     "startCommand": "python -m scraper.main",
