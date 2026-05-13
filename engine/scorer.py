@@ -42,10 +42,10 @@ def calculate_deal_score(price: float, estimated_price: float) -> float:
     if not price or not estimated_price or estimated_price == 0:
         return None
     pct_diff = (estimated_price - price) / estimated_price * 100
-    # Tighter scale - need 20% below market for a score of 80
-    # Need 40% below for score of 100
-    # At market price = 50, above market quickly drops below 50
-    score = 50 + (pct_diff * (50 / 40))
+    # Need 50%+ below market for score of 100
+    # At market price = 50
+    # 50%+ above market = 0
+    score = 50 + (pct_diff * (50 / 50))
     return round(max(0, min(100, score)), 1)
 
 
