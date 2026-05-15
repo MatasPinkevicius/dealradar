@@ -34,7 +34,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [minScore, setMinScore] = useState(60)
-  const [sortBy, setSortBy] = useState('deal_score')
+  const [sortBy, setSortBy] = useState('first_seen_at')
   const [sortAsc, setSortAsc] = useState(false)
   const [maxPrice, setMaxPrice] = useState('')
   const [minYear, setMinYear] = useState('')
