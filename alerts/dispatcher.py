@@ -1,7 +1,7 @@
 import os
 import psycopg2
 from dotenv import load_dotenv
-from alerts.telegram import send_message, format_deal_alert
+from alerts.tg_sender import send_message, format_deal_alert
 import time
 
 load_dotenv()
@@ -12,10 +12,40 @@ def get_connection():
     return psycopg2.connect(url)
 
 
-def send_top_deals(min_score: float = 75, limit: int = 10):
+def get_subscribers() -> list[int]:
+    """Get all active subscriber chat IDs."""
+    conn = get_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT chat_id FROM telegram_subscribers WHERE is_active = TRUE"
+            )
+            return [row[0] for row in cur.fetchall()]
+    finally:
+        conn.close()
+
+
+def send_to_subscriber(chat_id: int, text: str) -> bool:
+    """Send a message to a specific subscriber."""
+    import httpx
+    token = os.getenv("TELEGRAM_BOT_TOKEN")
+    url = f"https://api.telegram.org/bot{token}/sendMessage"
+    try:
+        response = httpx.post(url, json={
+            "chat_id": chat_id,
+            "text": text,
+            "parse_mode": "HTML",
+            "disable_web_page_preview": False,
+        }, timeout=10)
+        return response.status_code == 200
+    except Exception as e:
+        print(f"Failed to send to {chat_id}: {e}")
+        return False
+
+
+def send_top_deals(min_score: float = 75, limit: int = 5):
     """
-    Find the best deals and send them via Telegram.
-    Only sends listings that haven't been alerted yet.
+    Find best new deals and send to all subscribers.
     """
     conn = get_connection()
     try:
@@ -28,6 +58,7 @@ def send_top_deals(min_score: float = 75, limit: int = 10):
                 WHERE deal_score >= %s
                   AND is_active = TRUE
                   AND alerted = FALSE
+                  AND first_seen_at >= NOW() - INTERVAL '24 hours'
                 ORDER BY deal_score DESC
                 LIMIT %s
             """, (min_score, limit))
@@ -48,18 +79,30 @@ def send_top_deals(min_score: float = 75, limit: int = 10):
             print("No new deals to alert.")
             return
 
-        print(f"Sending {len(listings)} deal alerts...")
+        subscribers = get_subscribers()
+
+        # If no subscribers yet fall back to owner chat ID
+        if not subscribers:
+            owner_id = os.getenv("TELEGRAM_CHAT_ID")
+            if owner_id:
+                subscribers = [int(owner_id)]
+
+        print(f"Sending {len(listings)} deals to {len(subscribers)} subscribers...")
 
         alerted_ids = []
         for listing in listings:
             message = format_deal_alert(listing)
-            success = send_message(message)
-            if success:
-                alerted_ids.append(listing["id"])
-                print(f"Sent alert for {listing['brand']} {listing['model']} (score: {listing['deal_score']})")
-                time.sleep(1)  # Don't spam Telegram
+            success_count = 0
+            for chat_id in subscribers:
+                if send_to_subscriber(chat_id, message):
+                    success_count += 1
+                time.sleep(0.1)
 
-        # Mark as alerted so we don't send them again
+            if success_count > 0:
+                alerted_ids.append(listing["id"])
+                print(f"Sent: {listing['brand']} {listing['model']} to {success_count} subscribers")
+            time.sleep(1)
+
         if alerted_ids:
             with conn:
                 with conn.cursor() as cur:

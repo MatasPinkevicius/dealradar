@@ -119,11 +119,17 @@ def parse_listing_card(card) -> dict | None:
                     litre_match = re.search(r"(\d+[\.,]\d+)\s*l", text)
                     if litre_match:
                         litres = float(litre_match.group(1).replace(",", "."))
-                        listing["engine_cc"] = int(litres * 1000)
+                        if litres >= 20:
+                            listing["engine_cc"] = None
+                        else:
+                            listing["engine_cc"] = int(litres * 1000)
 
                 # Mileage: contains "km"
                 elif "km" in text_lower:
-                    listing["mileage_km"] = safe_int(text)
+                    km = safe_int(text)
+                    if km is not None and km >= 2_000_000:
+                        km = None
+                    listing["mileage_km"] = km
 
                 # Location: last span that doesn't match anything above
                 # (Lithuanian cities won't match fuel/transmission/engine/km patterns)

@@ -49,7 +49,7 @@ function LandingContent() {
           <Link href="/dashboard" className="bg-green-500 hover:bg-green-400 text-gray-950 font-semibold px-8 py-4 rounded-xl text-lg transition-colors">
             {t.hero_btn_dashboard}
           </Link>
-          <a href="https://t.me/your_bot_username" className="border border-gray-700 hover:border-gray-500 text-white font-semibold px-8 py-4 rounded-xl text-lg transition-colors">
+          <a href="https://t.me/cararbitage_lt_bot" className="border border-gray-700 hover:border-gray-500 text-white font-semibold px-8 py-4 rounded-xl text-lg transition-colors">
             {t.hero_btn_telegram}
           </a>
         </div>
