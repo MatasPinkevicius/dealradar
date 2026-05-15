@@ -9,7 +9,7 @@ function LandingContent() {
 
   return (
     <main className="min-h-screen bg-gray-950 text-white">
-      <nav className="flex items-center justify-between px-8 py-5 border-b border-gray-800">
+      <nav className="flex items-center justify-between px-4 py-4 md:px-8 md:py-5 border-b border-gray-800">
         <div className="flex items-center gap-2">
           <span className="text-2xl">📡</span>
           <span className="font-bold text-xl tracking-tight">DealRadar</span>
@@ -35,29 +35,29 @@ function LandingContent() {
         </div>
       </nav>
 
-      <section className="max-w-4xl mx-auto px-8 py-24 text-center">
+      <section className="max-w-4xl mx-auto px-4 py-12 md:px-8 md:py-24 text-center">
         <div className="inline-block bg-green-500/10 text-green-400 text-sm font-medium px-3 py-1 rounded-full mb-6 border border-green-500/20">
           {t.hero_badge}
         </div>
-        <h1 className="text-5xl font-bold tracking-tight mb-6 leading-tight">
+        <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mb-6 leading-tight">
           {t.hero_title}<br />
           <span className="text-green-400">{t.hero_title_highlight}</span>
         </h1>
-        <p className="text-xl text-gray-400 mb-10 max-w-2xl mx-auto leading-relaxed">
+        <p className="text-base md:text-xl text-gray-400 mb-10 max-w-2xl mx-auto leading-relaxed">
           {t.hero_desc}
         </p>
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Link href="/dashboard" className="bg-green-500 hover:bg-green-400 text-gray-950 font-semibold px-8 py-4 rounded-xl text-lg transition-colors">
+        <div className="flex flex-col gap-3 sm:flex-row sm:gap-4 sm:justify-center">
+          <Link href="/dashboard" className="w-full sm:w-auto bg-green-500 hover:bg-green-400 text-gray-950 font-semibold px-8 py-4 rounded-xl text-lg transition-colors text-center">
             {t.hero_btn_dashboard}
           </Link>
-          <a href="https://t.me/cararbitage_lt_bot" className="border border-gray-700 hover:border-gray-500 text-white font-semibold px-8 py-4 rounded-xl text-lg transition-colors">
+          <a href="https://t.me/cararbitage_lt_bot" className="w-full sm:w-auto border border-gray-700 hover:border-gray-500 text-white font-semibold px-8 py-4 rounded-xl text-lg transition-colors text-center">
             {t.hero_btn_telegram}
           </a>
         </div>
       </section>
 
       <section className="border-y border-gray-800 py-12">
-        <div className="max-w-4xl mx-auto px-8 grid grid-cols-3 gap-8 text-center">
+        <div className="max-w-4xl mx-auto px-4 md:px-8 grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
           <div>
             <div className="text-4xl font-bold text-green-400">4,000+</div>
             <div className="text-gray-400 mt-1">{t.stats_listings}</div>
