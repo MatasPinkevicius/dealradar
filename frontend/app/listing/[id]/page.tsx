@@ -50,6 +50,16 @@ export default function ListingPage() {
   const [listing, setListing] = useState<Listing | null>(null)
   const [similar, setSimilar] = useState<Similar[]>([])
   const [loading, setLoading] = useState(true)
+  const [imageOpen, setImageOpen] = useState(false)
+
+  useEffect(() => {
+    if (!imageOpen) return
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setImageOpen(false)
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [imageOpen])
 
   useEffect(() => {
     if (params.id) {
@@ -163,7 +173,18 @@ export default function ListingPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
           <div className="lg:col-span-2 space-y-4">
-            <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden aspect-video flex items-center justify-center">
+            <div
+              className={`bg-gray-900 rounded-xl border border-gray-800 overflow-hidden aspect-video flex items-center justify-center ${listing.image_url ? 'cursor-zoom-in' : ''}`}
+              onClick={() => listing.image_url && setImageOpen(true)}
+              role={listing.image_url ? 'button' : undefined}
+              tabIndex={listing.image_url ? 0 : undefined}
+              onKeyDown={e => {
+                if (listing.image_url && (e.key === 'Enter' || e.key === ' ')) {
+                  e.preventDefault()
+                  setImageOpen(true)
+                }
+              }}
+            >
               {listing.image_url ? (
                 <img src={listing.image_url} alt={`${listing.brand} ${listing.model}`} className="w-full h-full object-cover" />
               ) : (
@@ -215,7 +236,7 @@ export default function ListingPage() {
                 </div>
               )}
               <a href={listing.url} target="_blank" rel="noopener noreferrer" className="block w-full bg-green-500 hover:bg-green-400 text-gray-950 font-semibold px-4 py-3 rounded-xl text-center transition-colors">
-                {lang === 'lt' ? 'Ziureti skelbima' : 'View listing'}
+                {lang === 'lt' ? 'Žiūrėti skelbimą' : 'View listing'}
               </a>
             </div>
 
@@ -245,6 +266,29 @@ export default function ListingPage() {
           </div>
         </div>
       </div>
+      {imageOpen && listing.image_url && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4"
+          onClick={() => setImageOpen(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-label={lang === 'lt' ? 'Nuotrauka' : 'Image'}
+        >
+          <button
+            type="button"
+            onClick={() => setImageOpen(false)}
+            className="absolute top-4 right-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-2xl text-white hover:bg-white/20 transition-colors"
+            aria-label={lang === 'lt' ? 'Uždaryti' : 'Close'}
+          >
+            ×
+          </button>
+          <img
+            src={listing.image_url}
+            alt={`${listing.brand} ${listing.model}`}
+            className="max-h-[90vh] max-w-full object-contain"
+          />
+        </div>
+      )}
       <FeedbackBubble />
     </main>
   )
