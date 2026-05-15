@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { useLang } from '@/lib/language'
 import Link from 'next/link'
+import FeedbackBubble from '@/components/FeedbackBubble'
 
 interface Listing {
   id: number
@@ -111,6 +112,7 @@ export default function ListingPage() {
     return (
       <main className="min-h-screen bg-gray-950 text-white flex items-center justify-center">
         <div className="text-gray-500">{lang === 'lt' ? 'Kraunama...' : 'Loading...'}</div>
+        <FeedbackBubble />
       </main>
     )
   }
@@ -124,6 +126,7 @@ export default function ListingPage() {
             {lang === 'lt' ? 'Grizti' : 'Go back'}
           </Link>
         </div>
+        <FeedbackBubble />
       </main>
     )
   }
@@ -242,6 +245,7 @@ export default function ListingPage() {
           </div>
         </div>
       </div>
+      <FeedbackBubble />
     </main>
   )
 }

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useLang } from '@/lib/language'
 import Link from 'next/link'
+import FeedbackBubble from '@/components/FeedbackBubble'
 
 interface Listing {
   id: number
@@ -314,6 +315,7 @@ export default function Dashboard() {
           </>
         )}
       </div>
+      <FeedbackBubble />
     </main>
   )
 }
