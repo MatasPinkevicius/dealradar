@@ -28,7 +28,7 @@ export default function RootLayout({
     <html lang="lt">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <Script
-          src="https://www.googletagmanager.com/gtag/js?id=G-CLSBDQQE37"
+          src="https://www.googletagmanager.com/gtag/js?id=G-G9M2LE5GR8"
           strategy="afterInteractive"
         />
         <Script id="google-analytics" strategy="afterInteractive">
@@ -36,7 +36,7 @@ export default function RootLayout({
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
             gtag('js', new Date());
-            gtag('config', 'G-CLSBDQQE37');
+            gtag('config', 'G-G9M2LE5GR8');
           `}
         </Script>
         <LanguageProvider>
