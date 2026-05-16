@@ -26,7 +26,7 @@ def get_listings_to_scrape(limit: int = 200) -> list[dict]:
                 FROM listings
                 WHERE is_active = TRUE
                   AND deal_score IS NOT NULL
-                  AND description IS NULL
+                  AND detail_scraped_at IS NULL
                   AND first_seen_at >= NOW() - INTERVAL '30 days'
                 ORDER BY deal_score DESC
                 LIMIT %s
@@ -140,7 +140,7 @@ def parse_detail_page(html: str) -> dict:
         if kw_match:
             data["power_kw"] = int(kw_match.group(1))
 
-    # --- autoplius.lt price stats ---
+    # --- autoplius.lt price stats (last row = current market) ---
     for script in soup.find_all('script'):
         text = script.get_text()
         if 'priceStats' in text:
@@ -163,26 +163,22 @@ def save_detail_data(listing_id: int, data: dict, year: int = None):
             with conn.cursor() as cur:
                 if data.get("is_sold"):
                     cur.execute(
-                        "UPDATE listings SET is_active = FALSE WHERE id = %s",
+                        "UPDATE listings SET is_active = FALSE, detail_scraped_at = NOW() WHERE id = %s",
                         (listing_id,)
                     )
                     logger.info(f"Marked listing {listing_id} as sold")
                     return
 
-                # Extract autoplius price stats for listing year
+                # Use last row of price stats = current market value
                 autoplius_median = None
                 autoplius_min = None
                 autoplius_max = None
                 price_stats = data.get("price_stats")
-                if price_stats and year:
-                    for row in price_stats:
-                        if str(row[0]) == str(year):
-                            autoplius_min = row[1]
-                            autoplius_median = row[2]
-                            autoplius_max = row[3]
-                            break
-
-                if autoplius_median:
+                if price_stats:
+                    last_row = price_stats[-1]
+                    autoplius_min = last_row[1]
+                    autoplius_median = last_row[2]
+                    autoplius_max = last_row[3]
                     logger.info(f"autoplius price stats: min={autoplius_min} median={autoplius_median} max={autoplius_max}")
 
                 cur.execute("""
@@ -201,7 +197,8 @@ def save_detail_data(listing_id: int, data: dict, year: int = None):
                         power_kw = %s,
                         autoplius_median = %s,
                         autoplius_min = %s,
-                        autoplius_max = %s
+                        autoplius_max = %s,
+                        detail_scraped_at = NOW()
                     WHERE id = %s
                 """, (
                     data.get("description"),
