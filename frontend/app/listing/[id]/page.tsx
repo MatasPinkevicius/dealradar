@@ -24,6 +24,14 @@ interface Listing {
   color: string
   engine_cc: number
   drivetrain: string
+  ta_date: string
+  first_registration: string
+  doors: string
+  drivetrain_detail: string
+  power_kw: number
+  seats: number
+  euro_standard: string
+  registration_tax: number
   location: string
   url: string
   image_url: string
@@ -142,16 +150,21 @@ export default function ListingPage() {
   }
 
   const specs = [
+    { label: lang === 'lt' ? 'Pirma registracija' : 'First reg.', value: listing.first_registration || '—' },
     { label: lang === 'lt' ? 'Rida' : 'Mileage', value: listing.mileage_km ? `${listing.mileage_km.toLocaleString()} km` : '—' },
-    { label: lang === 'lt' ? 'Metai' : 'Year', value: listing.year || '—' },
+    { label: lang === 'lt' ? 'Variklis' : 'Engine', value: listing.engine_cc ? `${(listing.engine_cc / 1000).toFixed(1)}L${listing.power_kw ? ` · ${listing.power_kw}kW` : ''}` : '—' },
     { label: lang === 'lt' ? 'Kuras' : 'Fuel', value: listing.fuel_type || '—' },
-    { label: lang === 'lt' ? 'Pavarų deze' : 'Gearbox', value: listing.transmission || '—' },
-    { label: lang === 'lt' ? 'Variklis' : 'Engine', value: listing.engine_cc ? `${(listing.engine_cc / 1000).toFixed(1)}L` : '—' },
-    { label: lang === 'lt' ? 'Kebulas' : 'Body', value: listing.body_type || '—' },
+    { label: lang === 'lt' ? 'Pavarų dėžė' : 'Gearbox', value: listing.transmission || '—' },
+    { label: lang === 'lt' ? 'Varantieji ratai' : 'Drivetrain', value: listing.drivetrain_detail || listing.drivetrain || '—' },
+    { label: lang === 'lt' ? 'Kėbulas' : 'Body', value: listing.body_type || '—' },
+    { label: lang === 'lt' ? 'Durų skaičius' : 'Doors', value: listing.doors || '—' },
     { label: lang === 'lt' ? 'Spalva' : 'Color', value: listing.color || '—' },
+    { label: lang === 'lt' ? 'Sėdimų vietų' : 'Seats', value: listing.seats ? `${listing.seats}` : '—' },
+    { label: lang === 'lt' ? 'Euro standartas' : 'Euro standard', value: listing.euro_standard || '—' },
+    { label: lang === 'lt' ? 'Tech. apžiūra iki' : 'MOT until', value: listing.ta_date || '—', highlight: !!listing.ta_date },
+    { label: lang === 'lt' ? 'Registracijos mokestis' : 'Reg. tax', value: listing.registration_tax ? `€${listing.registration_tax}` : '—' },
     { label: lang === 'lt' ? 'Miestas' : 'Location', value: listing.location || '—' },
-    { label: lang === 'lt' ? 'Pastebeta' : 'First seen', value: formatDate(listing.first_seen_at) },
-    { label: lang === 'lt' ? 'Atnaujinta' : 'Last seen', value: formatDate(listing.last_seen_at) },
+    { label: lang === 'lt' ? 'Pastebėta' : 'First seen', value: formatDate(listing.first_seen_at) },
   ]
 
   return (
@@ -200,9 +213,20 @@ export default function ListingPage() {
               <p className="text-gray-400 text-sm mb-4">{listing.body_type} · {listing.fuel_type} · {listing.transmission}</p>
               <div className="grid grid-cols-2 gap-3">
                 {specs.map(spec => (
-                  <div key={spec.label} className="bg-gray-800 rounded-lg px-4 py-3">
-                    <div className="text-xs text-gray-500 mb-1">{spec.label}</div>
-                    <div className="text-sm text-white font-medium">{spec.value}</div>
+                  <div
+                    key={spec.label}
+                    className={`rounded-lg px-4 py-3 ${
+                      spec.highlight
+                        ? 'bg-green-500/10 border border-green-500/40'
+                        : 'bg-gray-800'
+                    }`}
+                  >
+                    <div className={`text-xs mb-1 ${spec.highlight ? 'text-green-400' : 'text-gray-500'}`}>
+                      {spec.label}
+                    </div>
+                    <div className={`text-sm font-medium ${spec.highlight ? 'text-green-300' : 'text-white'}`}>
+                      {spec.value}
+                    </div>
                   </div>
                 ))}
               </div>
