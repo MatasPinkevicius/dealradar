@@ -1,4 +1,5 @@
 import re
+import json
 import time
 import random
 from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeout
@@ -21,7 +22,7 @@ def get_listings_to_scrape(limit: int = 200) -> list[dict]:
     try:
         with conn.cursor() as cur:
             cur.execute("""
-                SELECT id, url, brand, model
+                SELECT id, url, brand, model, year
                 FROM listings
                 WHERE is_active = TRUE
                   AND deal_score IS NOT NULL
@@ -31,7 +32,7 @@ def get_listings_to_scrape(limit: int = 200) -> list[dict]:
                 LIMIT %s
             """, (limit,))
             return [
-                {"id": r[0], "url": r[1], "brand": r[2], "model": r[3]}
+                {"id": r[0], "url": r[1], "brand": r[2], "model": r[3], "year": r[4]}
                 for r in cur.fetchall()
             ]
     finally:
@@ -66,7 +67,6 @@ def parse_detail_page(html: str) -> dict:
     # --- Parse structured parameters ---
     params = {}
 
-    # Method 1: parameter-row with child elements
     for item in soup.select(".parameter-row"):
         children = item.find_all(recursive=False)
         if len(children) >= 2:
@@ -75,7 +75,6 @@ def parse_detail_page(html: str) -> dict:
             if label and value:
                 params[label] = value
 
-    # Method 2: list items with spans
     for item in soup.select(".announcement-parameters-list li"):
         spans = item.find_all("span")
         if len(spans) >= 2:
@@ -84,7 +83,6 @@ def parse_detail_page(html: str) -> dict:
             if label and value:
                 params[label] = value
 
-    # Method 3: dt/dd pairs
     for dt in soup.select("dt"):
         dd = dt.find_next_sibling("dd")
         if dd:
@@ -92,32 +90,26 @@ def parse_detail_page(html: str) -> dict:
 
     # --- Extract specific fields ---
 
-    # TA date
     ta = params.get("Tech. apžiūra iki")
     if ta:
         data["ta_date"] = ta.strip()
 
-    # First registration
     reg = params.get("Pirma registracija")
     if reg:
         data["first_registration"] = reg.strip()
 
-    # Doors
     doors = params.get("Durų skaičius")
     if doors:
         data["doors"] = doors.strip()
 
-    # Drivetrain
     drive = params.get("Varantieji ratai")
     if drive:
         data["drivetrain_detail"] = drive.strip()
 
-    # Color
     color = params.get("Spalva")
     if color:
         data["color_detail"] = color.strip()
 
-    # Seats
     seats = params.get("Sėdimų vietų skaičius")
     if seats:
         try:
@@ -125,17 +117,14 @@ def parse_detail_page(html: str) -> dict:
         except Exception:
             pass
 
-    # Wheel size
     wheel = params.get("Ratlankių skersmuo")
     if wheel:
         data["wheel_size"] = wheel.strip()
 
-    # Euro standard
     euro = params.get("Euro standartas")
     if euro:
         data["euro_standard"] = euro.strip()
 
-    # Registration tax
     tax = params.get("Registracijos mokestis")
     if tax:
         tax_match = re.search(r"[\d.,]+", tax)
@@ -145,17 +134,28 @@ def parse_detail_page(html: str) -> dict:
             except Exception:
                 pass
 
-    # Power in kW from engine string like "1968 cm³, 140 AG (103kW)"
     engine_str = params.get("Variklis", "")
     if engine_str:
         kw_match = re.search(r"(\d+)\s*kW", engine_str)
         if kw_match:
             data["power_kw"] = int(kw_match.group(1))
 
+    # --- autoplius.lt price stats ---
+    for script in soup.find_all('script'):
+        text = script.get_text()
+        if 'priceStats' in text:
+            match = re.search(r'var priceStats = (\[.*?\]);', text, re.DOTALL)
+            if match:
+                try:
+                    data["price_stats"] = json.loads(match.group(1))
+                except Exception:
+                    pass
+            break
+
     return data
 
 
-def save_detail_data(listing_id: int, data: dict):
+def save_detail_data(listing_id: int, data: dict, year: int = None):
     """Update listing with detail data."""
     conn = get_connection()
     try:
@@ -168,6 +168,22 @@ def save_detail_data(listing_id: int, data: dict):
                     )
                     logger.info(f"Marked listing {listing_id} as sold")
                     return
+
+                # Extract autoplius price stats for listing year
+                autoplius_median = None
+                autoplius_min = None
+                autoplius_max = None
+                price_stats = data.get("price_stats")
+                if price_stats and year:
+                    for row in price_stats:
+                        if str(row[0]) == str(year):
+                            autoplius_min = row[1]
+                            autoplius_median = row[2]
+                            autoplius_max = row[3]
+                            break
+
+                if autoplius_median:
+                    logger.info(f"autoplius price stats: min={autoplius_min} median={autoplius_median} max={autoplius_max}")
 
                 cur.execute("""
                     UPDATE listings
@@ -182,7 +198,10 @@ def save_detail_data(listing_id: int, data: dict):
                         wheel_size = %s,
                         euro_standard = %s,
                         registration_tax = %s,
-                        power_kw = %s
+                        power_kw = %s,
+                        autoplius_median = %s,
+                        autoplius_min = %s,
+                        autoplius_max = %s
                     WHERE id = %s
                 """, (
                     data.get("description"),
@@ -197,6 +216,9 @@ def save_detail_data(listing_id: int, data: dict):
                     data.get("euro_standard"),
                     data.get("registration_tax"),
                     data.get("power_kw"),
+                    autoplius_median,
+                    autoplius_min,
+                    autoplius_max,
                     listing_id,
                 ))
     finally:
@@ -204,10 +226,7 @@ def save_detail_data(listing_id: int, data: dict):
 
 
 def run_detail_scrape(batch_size: int = 200):
-    """
-    Scrape detail pages for listings missing description.
-    Run in batches so you can stop/start safely.
-    """
+    """Scrape detail pages for listings missing description."""
     listings = get_listings_to_scrape(limit=batch_size)
     logger.info(f"Detail scraping {len(listings)} listings...")
 
@@ -244,7 +263,7 @@ def run_detail_scrape(batch_size: int = 200):
                 else:
                     success += 1
 
-                save_detail_data(listing["id"], data)
+                save_detail_data(listing["id"], data, year=listing.get("year"))
                 time.sleep(random.uniform(3, 6))
 
             except PlaywrightTimeout:

@@ -230,6 +230,16 @@ export default function ListingPage() {
                   </div>
                 ))}
               </div>
+              {listing.description && (
+                <div className="mt-3 bg-gray-800 rounded-lg p-4">
+                  <h2 className="text-sm font-medium text-white mb-2">
+                    {lang === 'lt' ? 'Aprašymas' : 'Description'}
+                  </h2>
+                  <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap">
+                    {listing.description}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 
