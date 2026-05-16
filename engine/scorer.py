@@ -213,10 +213,10 @@ def run_scoring():
                 if comparable_count >= 200 and internal_median:
                     estimated_price = internal_median
                 elif comparable_count >= 50 and internal_median and autoplius_median:
-                    estimated_price = 0.2 * internal_median + 0.8 * autoplius_median
+                    estimated_price = autoplius_median
                     using_autoplius = True
                 elif comparable_count >= 10 and internal_median and autoplius_median:
-                    estimated_price = 0.1 * internal_median + 0.9 * autoplius_median
+                    estimated_price = autoplius_median
                     using_autoplius = True
                 elif autoplius_median:
                     estimated_price = autoplius_median
