@@ -4,7 +4,7 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from scraper.autoplius import scrape_all_listings, scrape_top_brands
-from scraper.db import start_scrape_run, finish_scrape_run, upsert_listings_batch
+from scraper.db import start_scrape_run, finish_scrape_run, upsert_listings_batch, mark_stale_listings_inactive
 from scraper.utils import logger
 from engine.scorer import run_scoring
 from alerts.dispatcher import send_top_deals
@@ -38,6 +38,9 @@ def run_scrape(max_pages: int = 100):
         finish_scrape_run(run_id, total_saved, total_new)
         logger.info(f"=== Scrape complete: {total_saved} found, {total_new} new ===")
 
+        # Mark stale listings as inactive
+        mark_stale_listings_inactive(days=7)
+
         if total_new > 0:
             logger.info("Running scoring engine...")
             run_scoring()
@@ -53,10 +56,7 @@ def run_scrape(max_pages: int = 100):
 
 
 def run_brand_scrape(pages_per_brand: int = 20):
-    """
-    Targeted brand scrape for better score accuracy.
-    Scrapes top brands specifically to build comparable data.
-    """
+    """Targeted brand scrape for better score accuracy."""
     logger.info("=== Starting brand scrape ===")
     run_id = start_scrape_run()
 

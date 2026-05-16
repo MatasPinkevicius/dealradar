@@ -8,9 +8,6 @@ load_dotenv()
 
 
 def get_connection():
-    """
-    Create and return a database connection.
-    """
     url = os.getenv("DATABASE_URL")
     if not url:
         raise ValueError("DATABASE_URL not set in .env file")
@@ -18,9 +15,6 @@ def get_connection():
 
 
 def start_scrape_run() -> int:
-    """
-    Insert a new scrape_run record and return its ID.
-    """
     conn = get_connection()
     try:
         with conn:
@@ -36,7 +30,6 @@ def start_scrape_run() -> int:
 
 
 def finish_scrape_run(run_id: int, listings_found: int, listings_new: int, status: str = "success"):
-    """Update the scrape_run record when we're done."""
     conn = get_connection()
     try:
         with conn:
@@ -58,11 +51,6 @@ def finish_scrape_run(run_id: int, listings_found: int, listings_new: int, statu
 
 
 def upsert_listings_batch(listings: list[dict], run_id: int) -> tuple[int, int]:
-    """
-    Insert/update multiple listings in one database transaction.
-    Much faster than one-by-one inserts.
-    Returns (total, new_count).
-    """
     if not listings:
         return 0, 0
 
@@ -73,7 +61,6 @@ def upsert_listings_batch(listings: list[dict], run_id: int) -> tuple[int, int]:
         with conn:
             with conn.cursor() as cur:
                 for listing in listings:
-                    # Check if listing already exists
                     cur.execute(
                         "SELECT id, price_eur FROM listings WHERE external_id = %s",
                         (listing["external_id"],),
@@ -84,7 +71,6 @@ def upsert_listings_batch(listings: list[dict], run_id: int) -> tuple[int, int]:
                         existing_id, old_price = existing
                         new_price = listing.get("price_eur")
 
-                        # Record price change if detected
                         if new_price and old_price and float(new_price) != float(old_price):
                             cur.execute(
                                 "INSERT INTO price_history (listing_id, price_eur) VALUES (%s, %s)",
@@ -125,5 +111,24 @@ def upsert_listings_batch(listings: list[dict], run_id: int) -> tuple[int, int]:
         logger.info(f"Batch saved {len(listings)} listings ({new_count} new)")
         return len(listings), new_count
 
+    finally:
+        conn.close()
+
+
+def mark_stale_listings_inactive(days: int = 7):
+    """
+    Mark listings as inactive if not seen in X days.
+    Keeps them in DB for scoring but hides from dashboard.
+    """
+    conn = get_connection()
+    try:
+        with conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "UPDATE listings SET is_active = FALSE WHERE is_active = TRUE AND last_seen_at < NOW() - INTERVAL '%s days'" % days
+                )
+                count = cur.rowcount
+                logger.info(f"Marked {count} listings as inactive (not seen in {days} days)")
+                return count
     finally:
         conn.close()
